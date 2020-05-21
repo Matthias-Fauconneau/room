@@ -5,8 +5,16 @@ authors = ["Matthias Fauconneau <matthias.fauconneau@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+derive_more = ''
 anyhow = ''
 fehler = ''
 serde = ''
 ron = ''
 chrono = ''
+geo = { version = '', features = ['use-serde'] }
+geocoding = ''
+persistentcache = { path = '../persistentcache' }
+#persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
+#framework = { path = '../framework' }
+itertools = ''
+dirs = ''

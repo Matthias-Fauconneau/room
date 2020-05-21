@@ -1,4 +1,4 @@
-use {fehler::throws, anyhow::Error, chrono::NaiveTime, serde::{Deserialize,Deserializer}};
+use {chrono::NaiveTime, serde::{Deserialize,Deserializer}, fehler::throws, derive_more::Deref, anyhow::Error, geo::prelude::*};
 
 #[derive(Debug)] struct Time(NaiveTime); //chrono::DateTime<Local>);
 impl<'de> Deserialize<'de> for Time {
@@ -8,13 +8,21 @@ impl<'de> Deserialize<'de> for Time {
     }
 }
 
-#[derive(Debug,Deserialize)] struct Room { address: String, rent: u32 }
+#[derive(Debug,Deserialize,Deref)] struct Room { #[deref] address: String, rent: u32 }
 #[derive(Debug,Deserialize)] enum Trip { From(Time), To(Time) }
-#[derive(Debug,Deserialize)] struct Goal { address: String, trips: Vec<Trip> }
+#[derive(Debug,Deserialize,Deref)] struct Goal { #[deref] address: String, trips: Vec<Trip> }
 
-#[throws]
-fn main() {
+//#[persistentcache::persistent_cache]#[params(FileStorage, dirs::cache_dir().join("geocoding"))]
+persistentcache::cache_func!(File, dirs::cache_dir().unwrap().join("geocoding"), "",
+fn location(address: &str) -> geocoding::Point<f64> {
+    use geocoding::Forward;
+    *geocoding::openstreetmap::Openstreetmap::new().forward(address).unwrap().first().unwrap_or_else(||panic!("{}",address))
+}
+);
+
+#[throws] fn main() {
     let rooms : Vec<Room> = ron::de::from_reader(std::fs::File::open("../rooms.ron")?)?;
     let goals: Vec<Goal> = ron::de::from_reader(std::fs::File::open("../goals.ron")?)?;
-    println!("{:?} {:?}", rooms, goals);
+    use itertools::Itertools;
+    println!("{:?}", rooms.iter().map(|room| goals.iter().map(move |goal| location(room).vincenty_distance(&location(goal)).unwrap()).format(" ")).format("\n"));
 }
