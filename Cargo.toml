@@ -29,3 +29,4 @@ url = ''
 map = { path = 'map' }
 bytes = { version = '', features = ['serde'] }
 kuchiki = ''
+nom = ''

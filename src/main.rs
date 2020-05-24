@@ -1,7 +1,7 @@
 #![feature(never_type)]
 mod wg;
-use {derive_more::Deref, fehler::throws, anyhow::{Error, bail}, chrono::NaiveTime, serde::{Deserialize, Deserializer}};
 
+use {fehler::throws, chrono::NaiveTime};
 #[derive(Debug)] struct Time(NaiveTime); //chrono::DateTime<Local>);
 impl<'de> Deserialize<'de> for Time {
     #[throws(D::Error)]
@@ -10,13 +10,24 @@ impl<'de> Deserialize<'de> for Time {
     }
 }
 
+use {derive_more::Deref, serde::{Deserialize, Deserializer}};
 #[derive(Debug,Deserialize,Deref)] struct Room { #[deref] address: String, rent: u32 }
 #[derive(Debug,Deserialize)] enum Trip { From(Time), To(Time) }
 #[derive(Debug,Deserialize,Deref)] struct Goal { #[deref] address: String, trips: Vec<Trip> }
 
-#[throws]
-fn main() -> ! {
-    bail!("{:?}", wg::search());
+use anyhow::{Error, Result, bail};
+//type Result<T=(),E=Error> = anyhow::Result<T,E>;
+//#[throws]
+fn main() -> Result<!> {
+    use {std::fmt::Debug, anyhow::Context, itertools::Itertools};
+    //#[throws] fn process_results<T,E,I:IntoIterator<Item=Result<T,E>>,R,F:FnOnce(itertools::ProcessResults<I::IntoIter, E>)->R>(iter: I, processor: F) -> R
+    //#[throws] fn process_results<T,E,I:Iterator<Item=Result<T,E>>,R,F:FnOnce(itertools::ProcessResults<<&mut I as IntoIterator>::IntoIter, E>)->R>(iter: I, processor: F) -> R
+    #[throws] fn process_results<T,E,I:Iterator<Item=Result<T,E>>,R,F:FnOnce(itertools::ProcessResults<&mut I, E>)->R>(mut iter: I, processor: F) -> R
+    where Result<R,E>:Context<R,E>, Result<T,E>:Debug {
+        //let iter = iter.into_iter();
+        itertools::process_results::<_,F,T,E,R>(iter.by_ref(), processor).context(format!("{:?}", iter.format("\n")))?
+    }
+    process_results(wg::rooms()?, |rooms|->Result<!> { bail!("{:?}", rooms.format("\n") ) } )?
 
     /*let rooms : Vec<Room> = ron::de::from_reader(std::fs::File::open("../rooms.ron")?)?;
     let goals: Vec<Goal> = ron::de::from_reader(std::fs::File::open("../goals.ron")?)?;
