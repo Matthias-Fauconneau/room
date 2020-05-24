@@ -6,6 +6,16 @@ impl<T> OkOr<T> for Result<T, ()> { fn ok_or(self, s: &'static str) -> Result<T,
 pub trait Ok<T> { fn ok(self) -> Result<T, Error>; }
 impl<T> Ok<T> for Option<T> { fn ok(self) -> Result<T, Error> { self.ok_or(()).ok_or("none") } }
 
+#[derive(derive_newtype::NewType)] struct NodeDataRef<T>(kuchiki::NodeDataRef<T>);
+
+impl<T:AsRef<str>> Extend<NodeDataRef<std::cell::RefCell<T>>> for String {
+    fn extend<I:IntoIterator<Item=NodeDataRef<std::cell::RefCell<T>>>>(&mut self, iter: I) { iter.into_iter().for_each(move |s| self.push_str(s.borrow().as_ref())) }
+}
+
+impl<T:AsRef<str>> std::iter::FromIterator<NodeDataRef<std::cell::RefCell<T>>> for String {
+    fn from_iter<I:IntoIterator<Item=NodeDataRef<std::cell::RefCell<T>>>>(iter: I) -> Self { let mut c = Self::new(); c.extend(iter); c }
+}
+
 use {serde::Serialize, smart_default::SmartDefault};
 
 #[derive(Serialize,SmartDefault,Hash)] enum Permanent { #[default] all }
@@ -53,17 +63,17 @@ use nom::{IResult, combinator::all_consuming, error::{VerboseError, convert_erro
 use derive_more::Deref;
 use anyhow::Context;
 
-#[derive(Debug,Deref)] struct Date(chrono::NaiveDate);
+#[derive(Debug,Deref,PartialEq,Eq,PartialOrd,Ord)] struct Date(chrono::NaiveDate);
 impl Date {
     #[throws] fn parse_from_str(s: &str) -> Self { Date(chrono::NaiveDate::parse_from_str(s, "%d.%m.%Y ").context(format!("'{}'",s))?) }
 }
 
-#[derive(Debug)] pub struct Room {
-    href: String,
+#[derive(Debug,PartialEq,Eq,PartialOrd,Ord)] pub struct Room {
+    cost: u16,
     create_date: Date,
     from_date: Date,
     until: String,
-    cost: u16,
+    href: String,
 }
 
 #[throws]
@@ -77,11 +87,12 @@ pub fn rooms() -> impl Iterator<Item=Result<Room>> {
         let a = a.as_node();
         pub fn integer<'t, E:nom::error::ParseError<&'t str>>(input: &'t str) -> IResult<&'t str,u16, E> { map_res(digit1, |s:&'t str| s.parse::<u16>())(input) }
         let cost = delimited(tag("SFr. "), map(pair(opt(terminated(integer,char('\''))),integer), |(k,u)| k.unwrap_or(0)*1_000+u), tag(".00"));
+        use kuchiki::iter::NodeIterator;
         Ok(Room{
             href: a.as_element().ok()?.attributes.borrow().get("href").ok()? .to_owned(),
             create_date: Date::parse_from_str(&a.get("span.create-date strong")?.text_contents()).context(a.to_string())?,
             from_date: Date::parse_from_str(&a.get("span.from-date strong")?.text_contents())?,
-            until: a.get("span.from-date *:last-child")?.text_contents(),
+            until: a.get("span.from-date")?.as_node().children().text_nodes().map(NodeDataRef::from).collect(),
             cost: parse(cost, &a.get("span.cost strong")?.text_contents() )?,
         })
     })

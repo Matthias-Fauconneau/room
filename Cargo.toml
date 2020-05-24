@@ -8,6 +8,7 @@ edition = "2018"
 serde_urlencoded = ''
 
 [dependencies]
+derive-newtype = ''
 smart-default = ''
 derive_more = ''
 anyhow = ''
