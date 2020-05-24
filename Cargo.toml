@@ -4,7 +4,11 @@ version = "0.0.0"
 authors = ["Matthias Fauconneau <matthias.fauconneau@gmail.com>"]
 edition = "2018"
 
+[dev-dependencies]
+serde_urlencoded = ''
+
 [dependencies]
+smart-default = ''
 derive_more = ''
 anyhow = ''
 fehler = ''
@@ -18,9 +22,10 @@ persistentcache = { path = '../persistentcache' }
 #framework = { path = '../framework' }
 itertools = ''
 dirs = ''
-static-http-cache = ''
 serde_json = ''
 lazy_static = ''
 reqwest = ''
 url = ''
 map = { path = 'map' }
+bytes = { version = '', features = ['serde'] }
+kuchiki = ''

@@ -1,11 +1,12 @@
 use serde::{Deserialize,Serialize};
-#[derive(Debug,Deserialize,Serialize)]
-pub struct Coordinate(pub(crate) geo_types::Coordinate<f64>);
+#[derive(Debug,Hash,Deserialize,Serialize)]
+pub struct Coordinate(pub(crate) geo_types::Coordinate<noisy_float::types::R64>);
+//pub struct Coordinate(pub(crate) geo_types::Coordinate<ordered_float::OrderedFloat<f64>>);
 impl std::fmt::Display for Coordinate { fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> { write!(f, "{},{}", self.0.x, self.0.y) } }
 
 use serde_json::Value;
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 enum Code {
     Ok, // Request could be processed as expected.
     InvalidUrl, // URL string is invalid.
@@ -18,7 +19,7 @@ enum Code {
     TooBig, // The request size violates one of the service specific request size restrictions.
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 #[allow(non_camel_case_types)]
 enum Type {
     turn, // a basic turn into direction of the modifier
@@ -38,11 +39,11 @@ enum Type {
     notification, // not an actual turn but a change in the driving conditions. For example the travel mode. If the road takes a turn itself, the modifier describes the direction
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 #[allow(non_camel_case_types)]
 enum Modifier { uturn, sharp_right, right, slight_right, straight, slight_left, left, sharp_left 	}
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 struct StepManeuver {
     location: Coordinate,
     bearing_before: f32, // The clockwise angle from true north to the direction of travel immediately before the maneuver.
@@ -52,13 +53,13 @@ struct StepManeuver {
     exit: Option<u32>,
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 struct Lane {
     indications: Vec<Modifier>,
     valid: bool,
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 struct Intersection {
     location: Coordinate,
     bearings: Vec<u16>, // available roads
@@ -68,7 +69,7 @@ struct Intersection {
     lanes: Vec<Lane>, // Available turn lanes at the intersection
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 struct Waypoint {
     name: String, // Name of the street the coordinate snapped to
     location: Coordinate, // Snapped coordinate
@@ -77,7 +78,7 @@ struct Waypoint {
 }
 
 /// Manoeuvre such as a turn or merge, followed by a distance of travel along a single way to the subsequent step.
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 struct RouteStep {
     distance: f32, // Distance of travel from the maneuver to the subsequent step, in float meters.
     duration: f32, // Estimated travel time, in float number of seconds.
@@ -92,7 +93,7 @@ struct RouteStep {
 }
 
 // Annotation of the whole route leg with fine-grained information about each segment or node id.
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 struct Annotation {
     distance: f32, // Distance, in metres, between each pair of coordinates
     duration: f32, // Duration between each pair of coordinates, in seconds
@@ -101,7 +102,7 @@ struct Annotation {
 }
 
 // Represents a route between two waypoints.
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 struct RouteLeg {
     distance: f32, // Distance traveled by this route leg, in float meters.
     duration: f32, // Estimated travel time, in float number of seconds.
@@ -111,7 +112,7 @@ struct RouteLeg {
 }
 
 // Route through (potentially multiple) waypoints.
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 pub struct Route {
     pub distance: f32, // The distance traveled by the route, in float meters.
     duration: f32, // The estimated travel time, in float number of seconds.
@@ -119,7 +120,7 @@ pub struct Route {
     legs: Vec<RouteLeg>,
 }
 
-#[derive(Debug,Deserialize)]
+#[derive(Debug,Deserialize,Serialize)]
 pub struct Response {
     code: Code,
     message: Option<String>,

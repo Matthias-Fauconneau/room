@@ -5,7 +5,9 @@ authors = ["Matthias Fauconneau <matthias.fauconneau@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+noisy_float = { version = '', features = ['serde-1'] } # why -1?
 fehler = ''
+anyhow = ''
 serde = ''
 geo-types = { version = '', features = ['serde'] }
 geocoding = ''
@@ -13,7 +15,10 @@ persistentcache = { path = '../../persistentcache' }
 #persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
 itertools = ''
 dirs = ''
-static-http-cache = ''
-reqwest = '0.9'
+reqwest = ''
+#static-http-cache = ''
+#reqwest = '0.9'
 serde_json = ''
 lazy_static = ''
+cfg-if = ''
+bytes = ''
