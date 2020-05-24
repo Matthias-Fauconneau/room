@@ -21,13 +21,12 @@ use {derive_more::Deref, serde::{Deserialize, Deserializer}};
 mod wg;
 
 use anyhow::Error;
-//type Result<T=(),E=Error> = anyhow::Result<T,E>
 #[throws]
 fn main() {
     process_results(wg::rooms()?, |rooms| {
-        println!("{}", rooms.sorted().format_with("\n",
-            |r,f| f(&format_args!("{} {:>4}F {}{}",r.create_date.format("%d.%m"), r.cost, r.from_date.format("%d.%m.%y"), r.until.as_deref().map(|s|format!("-{}",s)).unwrap_or_default()) )
-        ))
+        let rooms : Vec<_> = rooms.sorted().take(16).collect();
+        eprintln!("{}", rooms.iter().format("\n"));
+        println!("{}", rooms.iter().map(|r| r.url()).format("\n"));
     } )?
 
     /*let rooms : Vec<Room> = ron::de::from_reader(std::fs::File::open("../rooms.ron")?)?;

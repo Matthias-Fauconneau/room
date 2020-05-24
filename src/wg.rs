@@ -1,4 +1,4 @@
-#![allow(non_camel_case_types,non_snake_case)]
+#![allow(non_camel_case_types,non_snake_case,non_upper_case_globals)]
 
 pub trait OkOr<T> { fn ok_or(self, s: &'static str) -> Result<T, Error>; }
 impl<T> OkOr<T> for Result<T, ()> { fn ok_or(self, s: &'static str) -> Result<T, Error> { self.ok().ok_or(anyhow!(s)) } }
@@ -63,8 +63,6 @@ use nom::{IResult, combinator::all_consuming, error::{VerboseError, convert_erro
 
 #[derive(NewType,Debug,PartialEq,Eq,PartialOrd,Ord)] pub struct Date(chrono::NaiveDate);
 use newtype_derive::*; NewtypeDisplay! { () struct Date(chrono::NaiveDate); }
-//use custom_derive::custom_derive;
-//custom_derive!{ use newtype_derive::*; #[derive(NewtypeDisplay)] struct Date(chrono::NaiveDate); }
 
 use anyhow::Context;
 
@@ -79,12 +77,19 @@ impl Date {
     pub until: Option<String>,
     href: String,
 }
+impl std::fmt::Display for Room { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    write!(f, "{} {:>4}F {}{}",self.create_date.format("%d.%m"), self.cost, self.from_date.format("%d.%m.%y"), self.until.as_deref().map(|s|format!("-{}",s)).unwrap_or_default())
+}}
+lazy_static::lazy_static! { static ref host : Url = Url::parse("https://www.wgzimmer.ch").unwrap(); }
+impl Room {
+    pub fn url(&self) -> Url { host.join(&self.href).unwrap() }
+}
 
 #[throws]
 pub fn rooms() -> impl Iterator<Item=Result<Room>> {
     use nom::{combinator::{opt, map, map_res}, sequence::{pair, preceded, terminated, delimited}, bytes::complete::tag, character::complete::{char, digit1}};
 
-    let html = post(Url::parse("https://www.wgzimmer.ch/en/wgzimmer/search/mate.html")?, &Search{state: "zurich-stadt".to_string(), ..Default::default()});
+    let html = post(host.join("/en/wgzimmer/search/mate.html")?, &Search{state: "zurich-stadt".to_string(), ..Default::default()});
     use kuchiki::traits::TendrilSink/*one*/;
     let document = kuchiki::parse_html().one(html);
     document.select("html body #main #container #content ul li a:nth-of-type(2)").ok_or("selector")?.map(|a| {
@@ -96,7 +101,6 @@ pub fn rooms() -> impl Iterator<Item=Result<Room>> {
             href: a.as_element().ok()?.attributes.borrow().get("href").ok()? .to_owned(),
             create_date: Date::parse_from_str(&a.get("span.create-date strong")?.text_contents()).context(a.to_string())?,
             from_date: Date::parse_from_str(&a.get("span.from-date strong")?.text_contents())?,
-            //"  Until: No time restrictions "
             until: parse(preceded(tag("  Until: "), |i:&str| Ok(("", Some(i.trim_end()).filter(|s|s!=&"No time restrictions")))),
                                &a.get("span.from-date")?.as_node().children().text_nodes().map(NodeDataRef::from).collect::<String>())?.map(ToOwned::to_owned),
             cost: parse(cost, &a.get("span.cost strong")?.text_contents() )?,
