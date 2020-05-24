@@ -6,7 +6,8 @@ impl<T> OkOr<T> for Result<T, ()> { fn ok_or(self, s: &'static str) -> Result<T,
 pub trait Ok<T> { fn ok(self) -> Result<T, Error>; }
 impl<T> Ok<T> for Option<T> { fn ok(self) -> Result<T, Error> { self.ok_or(()).ok_or("none") } }
 
-#[derive(derive_newtype::NewType)] struct NodeDataRef<T>(kuchiki::NodeDataRef<T>);
+use newtype::NewType;
+#[derive(NewType)] struct NodeDataRef<T>(kuchiki::NodeDataRef<T>);
 
 impl<T:AsRef<str>> Extend<NodeDataRef<std::cell::RefCell<T>>> for String {
     fn extend<I:IntoIterator<Item=NodeDataRef<std::cell::RefCell<T>>>>(&mut self, iter: I) { iter.into_iter().for_each(move |s| self.push_str(s.borrow().as_ref())) }
@@ -60,25 +61,28 @@ use nom::{IResult, combinator::all_consuming, error::{VerboseError, convert_erro
     all_consuming(parser)(input).map_err(|e| e.map(|e|anyhow!("{}",convert_error(input, e))))?.1
 }
 
-use derive_more::Deref;
+#[derive(NewType,Debug,PartialEq,Eq,PartialOrd,Ord)] pub struct Date(chrono::NaiveDate);
+use newtype_derive::*; NewtypeDisplay! { () struct Date(chrono::NaiveDate); }
+//use custom_derive::custom_derive;
+//custom_derive!{ use newtype_derive::*; #[derive(NewtypeDisplay)] struct Date(chrono::NaiveDate); }
+
 use anyhow::Context;
 
-#[derive(Debug,Deref,PartialEq,Eq,PartialOrd,Ord)] struct Date(chrono::NaiveDate);
 impl Date {
     #[throws] fn parse_from_str(s: &str) -> Self { Date(chrono::NaiveDate::parse_from_str(s, "%d.%m.%Y ").context(format!("'{}'",s))?) }
 }
 
 #[derive(Debug,PartialEq,Eq,PartialOrd,Ord)] pub struct Room {
-    cost: u16,
-    create_date: Date,
-    from_date: Date,
-    until: String,
+    pub cost: u16,
+    pub create_date: Date,
+    pub from_date: Date,
+    pub until: Option<String>,
     href: String,
 }
 
 #[throws]
 pub fn rooms() -> impl Iterator<Item=Result<Room>> {
-    use nom::{combinator::{opt, map, map_res}, sequence::{pair, terminated, delimited}, bytes::complete::tag, character::complete::{char, digit1}};
+    use nom::{combinator::{opt, map, map_res}, sequence::{pair, preceded, terminated, delimited}, bytes::complete::tag, character::complete::{char, digit1}};
 
     let html = post(Url::parse("https://www.wgzimmer.ch/en/wgzimmer/search/mate.html")?, &Search{state: "zurich-stadt".to_string(), ..Default::default()});
     use kuchiki::traits::TendrilSink/*one*/;
@@ -92,7 +96,9 @@ pub fn rooms() -> impl Iterator<Item=Result<Room>> {
             href: a.as_element().ok()?.attributes.borrow().get("href").ok()? .to_owned(),
             create_date: Date::parse_from_str(&a.get("span.create-date strong")?.text_contents()).context(a.to_string())?,
             from_date: Date::parse_from_str(&a.get("span.from-date strong")?.text_contents())?,
-            until: a.get("span.from-date")?.as_node().children().text_nodes().map(NodeDataRef::from).collect(),
+            //"  Until: No time restrictions "
+            until: parse(preceded(tag("  Until: "), |i:&str| Ok(("", Some(i.trim_end()).filter(|s|s!=&"No time restrictions")))),
+                               &a.get("span.from-date")?.as_node().children().text_nodes().map(NodeDataRef::from).collect::<String>())?.map(ToOwned::to_owned),
             cost: parse(cost, &a.get("span.cost strong")?.text_contents() )?,
         })
     })
