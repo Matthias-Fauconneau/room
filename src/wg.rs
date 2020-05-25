@@ -75,15 +75,16 @@ impl Date {
     pub create_date: Date,
     pub from_date: Date,
     pub until: Option<String>,
-    href: String,
+    pub href: String,
+    pub address: String,
 }
 impl std::fmt::Display for Room { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     write!(f, "{} {:>4}F {}{}",self.create_date.format("%d.%m"), self.cost, self.from_date.format("%d.%m.%y"), self.until.as_deref().map(|s|format!("-{}",s)).unwrap_or_default())
 }}
-lazy_static::lazy_static! { static ref host : Url = Url::parse("https://www.wgzimmer.ch").unwrap(); }
-impl Room {
+lazy_static::lazy_static! { pub static ref host : Url = Url::parse("https://www.wgzimmer.ch").unwrap(); }
+/*impl Room {
     pub fn url(&self) -> Url { host.join(&self.href).unwrap() }
-}
+}*/
 
 #[throws]
 pub fn rooms() -> impl Iterator<Item=Result<Room>> {
@@ -104,6 +105,7 @@ pub fn rooms() -> impl Iterator<Item=Result<Room>> {
             until: parse(preceded(tag("  Until: "), |i:&str| Ok(("", Some(i.trim_end()).filter(|s|s!=&"No time restrictions")))),
                                &a.get("span.from-date")?.as_node().children().text_nodes().map(NodeDataRef::from).collect::<String>())?.map(ToOwned::to_owned),
             cost: parse(cost, &a.get("span.cost strong")?.text_contents() )?,
+            address: Default::default(),
         })
     })
 }

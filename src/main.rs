@@ -14,7 +14,16 @@ impl<'de> Deserialize<'de> for Time {
 }
 
 use {derive_more::Deref, serde::{Deserialize, Deserializer}};
-#[derive(Debug,Deserialize,Deref)] struct Room { #[deref] address: String, rent: u32 }
+
+#[derive(Debug,Deserialize,Deref,PartialEq,Eq,PartialOrd,Ord)] struct Room { cost: u16, #[deref] address: String, href: Option<String> }
+impl std::fmt::Display for Room { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    write!(f, "{:>4} {}", self.cost, self.address)
+}}
+use url::Url;
+impl Room {
+    pub fn url(&self, base: &Url) -> Option<Url> { self.href.as_ref().map(|href| base.join(&href).ok()).flatten() }
+}
+
 #[derive(Debug,Deserialize)] enum Trip { From(Time), To(Time) }
 #[derive(Debug,Deserialize,Deref)] struct Goal { #[deref] address: String, trips: Vec<Trip> }
 
@@ -23,14 +32,13 @@ mod wg;
 use anyhow::Error;
 #[throws]
 fn main() {
-    process_results(wg::rooms()?, |rooms| {
-        let rooms : Vec<_> = rooms.sorted().take(16).collect();
-        eprintln!("{}", rooms.iter().format("\n"));
-        println!("{}", rooms.iter().map(|r| r.url()).format("\n"));
-    } )?
-
-    /*let rooms : Vec<Room> = ron::de::from_reader(std::fs::File::open("../rooms.ron")?)?;
     let goals: Vec<Goal> = ron::de::from_reader(std::fs::File::open("../goals.ron")?)?;
-    use {map::{location, route], itertools::Itertools};
-    println!("{:?}", rooms.iter().map(|room| goals.iter().map(move |goal| map::route(&[location(room), location(goal)]).unwrap().routes[0].distance).format(" ")).format("\n"));*/
+    let rooms : Vec<Room> = ron::de::from_reader(std::fs::File::open("../rooms.ron")?)?;
+    let rooms = rooms.into_iter().map(Ok).chain(wg::rooms()?.map(|r|r.map(|wg::Room{cost,address,href,..}| Room{cost,address,href:Some(href)})));
+    process_results(rooms, |rooms| {
+        let rooms : Vec<_> = rooms.sorted().filter(|r| r.address.len()>0).take(2).collect();
+        eprintln!("{}", rooms.iter().format("\n"));
+        println!("{}", rooms.iter().filter_map(|r| r.url(&wg::host)).format("\n"));
+        eprintln!("{:?}", rooms.iter().map(|room| goals.iter().filter_map(move |goal| map::distance(room, goal)).format(" ")).format("\n"))
+    } )?
 }
