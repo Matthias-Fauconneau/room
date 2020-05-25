@@ -11,15 +11,20 @@ anyhow = ''
 serde = ''
 geo-types = { version = '', features = ['serde'] }
 geocoding = ''
-persistentcache = { path = '../../persistentcache' }
-#persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
 itertools = ''
 dirs = ''
 reqwest = ''
-#static-http-cache = ''
-#static-http-cache = { git = 'https://gitlab.com/Screwtapello/static_http_cache' }
-static-http-cache = { path = '../../static_http_cache' }
 serde_json = ''
 lazy_static = ''
 cfg-if = ''
 bytes = ''
+
+#static-http-cache = ''
+#static-http-cache = { git = 'https://gitlab.com/Screwtapello/static_http_cache' }
+static-http-cache = { git = 'https://github.com/Matthias-Fauconneau/static-http-cache' }
+#static-http-cache = { path = '../../static_http_cache' }
+
+#persistentcache = ''
+#persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
+persistentcache = { git = 'https://github.com/Matthias-Fauconneau/persistentcache-rs' }
+#persistentcache = { path = '../../persistentcache' }

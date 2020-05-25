@@ -10,7 +10,6 @@ serde_urlencoded = ''
 [dependencies]
 newtype = ''
 newtype_derive = ''
-custom_derive = ''
 smart-default = ''
 derive_more = ''
 anyhow = ''
@@ -18,11 +17,7 @@ fehler = ''
 serde = ''
 ron = ''
 chrono = ''
-#geo = { version = '', features = ['use-serde'] }
 geocoding = ''
-persistentcache = { path = '../persistentcache' }
-#persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
-#framework = { path = '../framework' }
 itertools = ''
 dirs = ''
 serde_json = ''
@@ -33,3 +28,8 @@ map = { path = 'map' }
 bytes = { version = '', features = ['serde'] }
 kuchiki = ''
 nom = ''
+
+#persistentcache = ''
+#persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
+persistentcache = { git = 'https://github.com/Matthias-Fauconneau/persistentcache-rs' }
+#persistentcache = { path = '../../persistentcache' }
