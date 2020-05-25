@@ -36,9 +36,9 @@ fn main() {
     let rooms : Vec<Room> = ron::de::from_reader(std::fs::File::open("../rooms.ron")?)?;
     let rooms = rooms.into_iter().map(Ok).chain(wg::rooms()?.map(|r|r.map(|wg::Room{cost,address,href,..}| Room{cost,address,href:Some(href)})));
     process_results(rooms, |rooms| {
-        let rooms : Vec<_> = rooms.sorted().filter(|r| r.address.len()>0).take(2).collect();
+        let rooms : Vec<_> = rooms.sorted().filter(|r| r.address.len()>0).take(3).collect();
         eprintln!("{}", rooms.iter().format("\n"));
         println!("{}", rooms.iter().filter_map(|r| r.url(&wg::host)).format("\n"));
-        eprintln!("{:?}", rooms.iter().map(|room| goals.iter().filter_map(move |goal| map::distance(room, goal)).format(" ")).format("\n"))
+        eprintln!("{:?}", rooms.iter().map(|room| goals.iter().filter_map(move |goal| map::distance(room, goal).ok()).format(" ")).format("\n"))
     } )?
 }

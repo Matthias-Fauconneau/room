@@ -17,7 +17,8 @@ itertools = ''
 dirs = ''
 reqwest = ''
 #static-http-cache = ''
-#reqwest = '0.9'
+#static-http-cache = { git = 'https://gitlab.com/Screwtapello/static_http_cache' }
+static-http-cache = { path = '../../static_http_cache' }
 serde_json = ''
 lazy_static = ''
 cfg-if = ''

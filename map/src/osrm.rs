@@ -4,7 +4,7 @@ pub struct Coordinate(pub(crate) geo_types::Coordinate<noisy_float::types::R64>)
 //pub struct Coordinate(pub(crate) geo_types::Coordinate<ordered_float::OrderedFloat<f64>>);
 impl std::fmt::Display for Coordinate { fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> { write!(f, "{},{}", self.0.x, self.0.y) } }
 
-use serde_json::Value;
+//use serde_json::Value;
 
 #[derive(Debug,Deserialize,Serialize)]
 enum Code {
@@ -82,7 +82,7 @@ struct Waypoint {
 struct RouteStep {
     distance: f32, // Distance of travel from the maneuver to the subsequent step, in float meters.
     duration: f32, // Estimated travel time, in float number of seconds.
-    geometry: Value,
+    //geometry: Value,
     name: String, // Name of the way along which travel proceeds.
     r#ref: Option<u32>, // Reference number or code for the way. Optionally included, if ref data is available for the given way.
     pronunciation: Option<String>, // Pronunciation hint of the way name. Will be undefined if there is no pronunciation hit.
@@ -116,7 +116,7 @@ struct RouteLeg {
 pub struct Route {
     pub distance: f32, // The distance traveled by the route, in float meters.
     duration: f32, // The estimated travel time, in float number of seconds.
-    geometry: Value,
+    //geometry: Value,
     legs: Vec<RouteLeg>,
 }
 
