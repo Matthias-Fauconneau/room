@@ -5,26 +5,21 @@ authors = ["Matthias Fauconneau <matthias.fauconneau@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-noisy_float = { version = '', features = ['serde-1'] } # why -1?
 fehler = ''
 anyhow = ''
-serde = ''
-geo-types = { version = '', features = ['serde'] }
-geocoding = ''
+noisy_float = { version = '', features = ['serde-1'] } # why -1?
+error = { package = 'framework', git = 'https://github.com/Matthias-Fauconneau/framework' }
+error = { package = 'framework', path = '../../framework' }
 itertools = ''
+
 dirs = ''
-reqwest = ''
-serde_json = ''
-lazy_static = ''
-cfg-if = ''
-bytes = ''
-
-#static-http-cache = ''
-#static-http-cache = { git = 'https://gitlab.com/Screwtapello/static_http_cache' }
-static-http-cache = { git = 'https://github.com/Matthias-Fauconneau/static-http-cache' }
-#static-http-cache = { path = '../../static_http_cache' }
-
+serde = ''
 #persistentcache = ''
 #persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
 persistentcache = { git = 'https://github.com/Matthias-Fauconneau/persistentcache-rs' }
 #persistentcache = { path = '../../persistentcache' }
+client = { path = '../client' }
+
+serde_json = ''
+geo-types = { version = '', features = ['serde'] }
+geocoding = ''

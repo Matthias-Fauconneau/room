@@ -1,19 +1,5 @@
-#![allow(non_upper_case_globals)]
-
-trait Erf { type Output; fn erf(self) -> Self::Output; }
-impl<T,E:std::string::ToString> Erf for Result<T,E> {
-    type Output = Result<T,String>;
-    fn erf(self) -> Self::Output { self.map_err(|e| std::string::ToString::to_string(&e)) }
-}
-
-trait Meh { type Output; fn meh(self) -> Self::Output; }
-impl<T> Meh for Result<T,String> {
-    type Output = Result<T,Error>;
-    fn meh(self) -> Self::Output { self.map_err(Error::msg) }
-}
-
-mod cache; mod osrm;
-use {fehler::throws, anyhow::Error, cache::Client, itertools::Itertools, reqwest::Url};
+mod osrm;
+use {fehler::throws, anyhow::Error, itertools::Itertools, client::{Url, Client, client}};
 pub use osrm::Coordinate;
 
 persistentcache::cache_func!(File, dirs::cache_dir().unwrap().join("geocoding"),
@@ -34,8 +20,16 @@ impl<T:Client> Route for T {
     }
 }
 
-persistentcache::cache_func!(File, std::env::temp_dir().join("route"), // HTTP is already cached but this also skips the stale request
-pub fn route(coordinates: &[Coordinate]) -> Result<osrm::Response, String> { Ok(cache::client().route(coordinates).erf()?) }
+persistentcache::cache_func!(File, std::env::temp_dir().join("route"), // skips If-Modified
+pub fn route(coordinates: &[Coordinate]) -> Result<osrm::Response, String> {
+    use error::ErrInto;
+    client().route(coordinates).err_into()
+}
 );
 
-#[throws] pub fn distance(from: &str, to: &str) -> f32 { route(&[location(from).meh()?, location(to).meh()?]).meh()?.routes[0].distance }
+#[throws] pub fn distance(from: &str, to: &str) -> f32 {
+    use error::error::MapErrToError;
+    route(&[location(from).map_err_to_error()?, location(to).map_err_to_error()?]).map_err_to_error()?.routes[0].distance
+    //use error::error::From;
+    //From::from(route(&[location(from).into()?, location(to).into()?]))?.routes[0].distance
+}

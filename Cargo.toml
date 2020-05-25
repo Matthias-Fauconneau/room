@@ -4,32 +4,34 @@ version = "0.0.0"
 authors = ["Matthias Fauconneau <matthias.fauconneau@gmail.com>"]
 edition = "2018"
 
-[dev-dependencies]
-serde_urlencoded = ''
-
 [dependencies]
+fehler = ''
+anyhow = ''
+error = { package = 'framework', git = 'https://github.com/Matthias-Fauconneau/framework' }
+#error = { package = 'framework', path = '../framework' }
 newtype = ''
 newtype_derive = ''
 smart-default = ''
 derive_more = ''
-anyhow = ''
-fehler = ''
+itertools = ''
+lazy_static = ''
+
+nom = ''
 serde = ''
 ron = ''
-chrono = ''
-geocoding = ''
-itertools = ''
-dirs = ''
-serde_json = ''
-lazy_static = ''
-reqwest = ''
-url = ''
-map = { path = 'map' }
-bytes = { version = '', features = ['serde'] }
-kuchiki = ''
-nom = ''
 
+dirs = ''
 #persistentcache = ''
 #persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
 persistentcache = { git = 'https://github.com/Matthias-Fauconneau/persistentcache-rs' }
 #persistentcache = { path = '../../persistentcache' }
+url = ''
+reqwest = ''
+client = { path = 'client' }
+
+kuchiki = ''
+chrono = ''
+map = { path = 'map' }
+
+[dev-dependencies]
+serde_urlencoded = ''
