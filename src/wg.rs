@@ -1,13 +1,9 @@
 #![allow(non_camel_case_types,non_snake_case,non_upper_case_globals)]
-use {error::ErrInto, reqwest::Url};
+use {persistent_cache::cache, anyhow::Result, reqwest::Url};
 
-persistentcache::cache_func!(File, std::env::temp_dir().join("wg"), // skips If-Modified
-    pub fn get(url: Url) -> Result<Vec<u8>,String> { use client::{Client, client}; client().get(url).err_into() }
-);
-
-persistentcache::cache_func!(File, dirs::cache_dir().unwrap().join("wg"), // Cache HTTP post for development
-    pub fn post(url: Url, form: &(impl Serialize+std::hash::Hash)) -> String { reqwest::blocking::Client::new().post(url).form(form).send().unwrap().text().unwrap() }
-);
+cache!{tmp wget, pub fn get(url: Url) -> Result<Vec<u8>> { use client::{Client, client}; client().get(url) } }
+#[throws] pub fn get_text(url: Url) -> String { String::from_utf8(get(url)?)? }
+cache!{home wg, fn post(url: Url, form: &(impl Serialize+std::hash::Hash)) -> Result<String> { Ok(reqwest::blocking::Client::new().post(url).form(form).send()?.text()?) } }
 
 use newtype::NewType;
 #[derive(NewType)] struct NodeDataRef<T>(kuchiki::NodeDataRef<T>);
@@ -18,6 +14,14 @@ impl<T:AsRef<str>> Extend<NodeDataRef<std::cell::RefCell<T>>> for String {
 
 impl<T:AsRef<str>> std::iter::FromIterator<NodeDataRef<std::cell::RefCell<T>>> for String {
     fn from_iter<I:IntoIterator<Item=NodeDataRef<std::cell::RefCell<T>>>>(iter: I) -> Self { let mut c = Self::new(); c.extend(iter); c }
+}
+
+trait Text { fn text(&self) -> String; }
+impl Text for kuchiki::NodeDataRef<kuchiki::ElementData> {
+    fn text(&self) -> String {
+        use kuchiki::iter::NodeIterator;
+        self.as_node().children().text_nodes().map(NodeDataRef::from).collect::<String>()
+    }
 }
 
 use error::{OkOr, Ok};
@@ -74,7 +78,7 @@ struct Search {
     start: u32,
 }
 
-use {anyhow::{Error, anyhow, Result}, fehler::throws};
+use {anyhow::{Error, anyhow}, fehler::throws};
 
 #[test] #[throws] fn test(){
     assert_eq!(serde_urlencoded::to_string(Search{state: "zurich-stadt".to_string(), ..Default::default()})?,
@@ -88,24 +92,28 @@ lazy_static::lazy_static! { pub static ref host : Url = Url::parse("https://www.
 
 #[throws]
 pub fn rooms() -> impl Iterator<Item=Result<Room>> {
-    let html = post(host.join("/en/wgzimmer/search/mate.html")?, &Search{state: "zurich-stadt".to_string(), ..Default::default()});
-    use kuchiki::traits::TendrilSink/*one*/;
-    let document = kuchiki::parse_html().one(html);
-    document.select("html body #main #container #content ul li a:nth-of-type(2)").ok_or("selector")?.map(|a| {
+    fn document(html: &str) -> kuchiki::NodeRef {
+        use kuchiki::traits::TendrilSink/*one*/;
+        kuchiki::parse_html().one(html)
+    };
+    document(&post(host.join("/en/wgzimmer/search/mate.html")?, &Search{state: "zurich-stadt".to_string(), ..Default::default()})?)
+    .select("html body #main #container #content ul li a:nth-of-type(2)").ok_or("selector")?.map(|a| {
         let a = a.as_node();
-        eprintln!("{}", a.to_string());
+        let href = a.as_element().ok()?.attributes.borrow().get("href").ok()? .to_owned();
         use nom::{combinator::{opt, map, map_res}, sequence::{pair, preceded, terminated, delimited}, bytes::complete::tag, character::complete::{char, digit1}};
         pub fn integer<'t, E:nom::error::ParseError<&'t str>>(input: &'t str) -> IResult<&'t str,u16, E> { map_res(digit1, |s:&'t str| s.parse::<u16>())(input) }
         let cost = delimited(tag("SFr. "), map(pair(opt(terminated(integer,char('\''))),integer), |(k,u)| k.unwrap_or(0)*1_000+u), tag(".00"));
-        use kuchiki::iter::NodeIterator;
+        let room = document(&get_text(host.join(&href)?)?);
         Ok(Room{
-            href: a.as_element().ok()?.attributes.borrow().get("href").ok()? .to_owned(),
+            href,
             create_date: Date::parse_from_str(&a.get("span.create-date strong")?.text_contents()).context(a.to_string())?,
             from_date: Date::parse_from_str(&a.get("span.from-date strong")?.text_contents())?,
-            until: parse(preceded(tag("  Until: "), |i:&str| Ok(("", Some(i.trim_end()).filter(|s|s!=&"No time restrictions")))),
-                               &a.get("span.from-date")?.as_node().children().text_nodes().map(NodeDataRef::from).collect::<String>())?.map(ToOwned::to_owned),
+            until: parse(
+                preceded(tag("  Until: "), |i:&str| Ok(("", Some(i.trim_end()).filter(|s|s!=&"No time restrictions")))),
+                &a.get("span.from-date")?.text()
+            )?.map(ToOwned::to_owned),
             cost: parse(cost, &a.get("span.cost strong")?.text_contents() )?,
-            address: Default::default(),
+            address: room.get("html body #main #container #content .result .adress-region p:nth-child(3)")?.text(),
         })
     })
 }

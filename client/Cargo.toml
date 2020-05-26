@@ -12,5 +12,5 @@ dirs = ''
 reqwest = ''
 #static-http-cache = ''
 #static-http-cache = { git = 'https://gitlab.com/Screwtapello/static_http_cache' }
-static-http-cache = { git = 'https://github.com/Matthias-Fauconneau/static-http-cache' }
-#static-http-cache = { path = '../../static_http_cache' }
+#static-http-cache = { git = 'https://github.com/Matthias-Fauconneau/static-http-cache' }
+static-http-cache = { path = '../../static_http_cache' }

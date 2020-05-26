@@ -21,10 +21,8 @@ serde = ''
 ron = ''
 
 dirs = ''
-#persistentcache = ''
-#persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
-persistentcache = { git = 'https://github.com/Matthias-Fauconneau/persistentcache-rs' }
-#persistentcache = { path = '../../persistentcache' }
+#persistent-cache = { git = 'https://github.com/Matthias-Fauconneau/persistent-cache' }
+persistent-cache = { path = '../persistent-cache' }
 url = ''
 reqwest = ''
 client = { path = 'client' }
@@ -35,3 +33,6 @@ map = { path = 'map' }
 
 [dev-dependencies]
 serde_urlencoded = ''
+
+[patch.'https://github.com/Matthias-Fauconneau/framework']
+framework = { path = "../framework" }

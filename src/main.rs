@@ -1,8 +1,7 @@
-#![feature(never_type)]
-
-use {std::fmt::Debug, anyhow::Context, itertools::Itertools};
-#[throws] fn process_results<T,E,I:Iterator<Item=Result<T,E>>,R,F:FnOnce(itertools::ProcessResults<&mut I, E>)->R>(mut iter: I, processor: F) -> R
-where Result<R,E>:Context<R,E>, Result<T,E>:Debug { itertools::process_results::<_,F,T,E,R>(iter.by_ref(), processor).context(format!("{:?}", iter.format("\n")))? }
+//use {std::fmt::Debug, anyhow::Context, itertools::Itertools};
+/*#[throws] fn process_results<T,E,I:Iterator<Item=Result<T,E>>,R,F:FnOnce(itertools::ProcessResults<&mut I, E>)->R>(mut iter: I, processor: F) -> R
+where Result<R,E>:Context<R,E>, Result<T,E>:Debug { itertools::process_results::<_,F,T,E,R>(iter.by_ref(), processor).context(format!("{:?}", iter.format("\n")))? }*/
+use itertools::process_results;
 
 use {fehler::throws, chrono::NaiveTime};
 #[derive(Debug)] struct Time(NaiveTime); //chrono::DateTime<Local>);
@@ -36,9 +35,16 @@ fn main() {
     let rooms : Vec<Room> = ron::de::from_reader(std::fs::File::open("../rooms.ron")?)?;
     let rooms = rooms.into_iter().map(Ok).chain(wg::rooms()?.map(|r|r.map(|wg::Room{cost,address,href,..}| Room{cost,address,href:Some(href)})));
     process_results(rooms, |rooms| {
+        use itertools::Itertools;
         let rooms : Vec<_> = rooms.sorted().filter(|r| r.address.len()>0).take(3).collect();
         eprintln!("{}", rooms.iter().format("\n"));
         println!("{}", rooms.iter().filter_map(|r| r.url(&wg::host)).format("\n"));
-        eprintln!("{:?}", rooms.iter().map(|room| goals.iter().filter_map(move |goal| map::distance(room, goal).ok()).format(" ")).format("\n"))
-    } )?
+        use newtype::NewType;
+        #[derive(NewType)] struct Result<T,E>(std::result::Result<T,E>);
+        use std::fmt::Display;
+        impl<T:Display,E:Display> Display for Result<T,E> { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            match &self.0 { Ok(inner) => Display::fmt(inner, f), Err(inner) => write!(f, "({})", inner) }
+        } }
+        eprintln!("{}", rooms.iter().map(|room| goals.iter().map(move |goal| map::distance(room, goal)).map(Result::from).format(" ")).format("\n"))
+    })?
 }

@@ -7,17 +7,13 @@ edition = "2018"
 [dependencies]
 fehler = ''
 anyhow = ''
-noisy_float = { version = '', features = ['serde-1'] } # why -1?
-error = { package = 'framework', git = 'https://github.com/Matthias-Fauconneau/framework' }
-error = { package = 'framework', path = '../../framework' }
 itertools = ''
+noisy_float = { version = '', features = ['serde-1'] } # why -1?
+lazy_static = ''
 
 dirs = ''
 serde = ''
-#persistentcache = ''
-#persistentcache = { git = 'https://github.com/stefan-k/persistentcache-rs' }
-persistentcache = { git = 'https://github.com/Matthias-Fauconneau/persistentcache-rs' }
-#persistentcache = { path = '../../persistentcache' }
+persistent-cache = { path = '../../persistent-cache' }
 client = { path = '../client' }
 
 serde_json = ''
